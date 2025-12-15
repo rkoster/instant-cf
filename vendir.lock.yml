@@ -1,0 +1,11 @@
+apiVersion: vendir.k14s.io/v1alpha1
+directories:
+- contents:
+  - git:
+      commitTitle: Update cf-deployment manifest version to v53.8.0
+      sha: efcb497759b4a223da28f3aa92ba06988ce8c296
+      tags:
+      - v53.8.0
+    path: .
+  path: manifests/cf-deployment
+kind: LockConfig
