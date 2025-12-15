@@ -7,7 +7,8 @@ directories:
 - path: manifests/cf-deployment
   contents:
   - path: .
-    githubRelease:
-      slug: cloudfoundry/cf-deployment
-      tag: v53.8.0
-      disableAutoChecksumValidation: true
+    git:
+      url: https://github.com/cloudfoundry/cf-deployment
+      refSelection:
+        semver:
+          constraints: ">=53.0.0 <54.0.0"
