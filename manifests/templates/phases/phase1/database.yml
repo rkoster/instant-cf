@@ -11,7 +11,7 @@
 #@overlay/match by=overlay.all, expects="1+"
 ---
 instance_groups:
-#@overlay/match by=lambda i,left,right: left["name"] != "database", expects="0+"
+#@overlay/match by=lambda idx,left,right: left["name"] != "database", expects="0+"
 #@overlay/remove
 - name: placeholder
 
@@ -32,6 +32,6 @@ instance_groups:
     - #@ data.values.network.ips.database
   #! Keep only postgres job - remove any other jobs if they exist
   jobs:
-  #@overlay/match by=lambda i,left,right: left["name"] != "postgres", expects="0+"
+  #@overlay/match by=lambda idx,left,right: left["name"] != "postgres", expects="0+"
   #@overlay/remove
   - name: placeholder

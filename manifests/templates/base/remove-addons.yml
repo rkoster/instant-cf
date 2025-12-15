@@ -1,6 +1,6 @@
 #! remove-addons.yml
 #! Remove addons section from the manifest
-#! Addons are not compatible with bob (Bosh on Kubernetes) and need to be 
+#! Addons are not compatible with Bosh OCI Builder (bob) and need to be 
 #! transformed into jobs in instance groups instead
 
 #@ load("@ytt:overlay", "overlay")
