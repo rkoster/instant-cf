@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help sync generate validate-templates
+.PHONY: help sync generate generate-phase1-database validate-templates
 
 # Default target - show help
 help: ## Show available commands
@@ -20,10 +20,19 @@ validate-templates: ## Validate YTT templates can be loaded
 		--data-values-inspect > /dev/null || { echo "❌ Schema/values validation failed"; exit 1; }
 	@echo "✅ Template validation successful"
 
-generate: validate-templates ## Generate manifests (Milestone 1: validates templates only)
-	@echo "Note: Phase-specific manifest generation will be implemented in Milestone 2+"
-	@echo "Current milestone (1) provides template foundation and validation."
-	@echo ""
-	@echo "Next steps:"
-	@echo "  - Milestone 2: Implement phase1/database.yml template"
-	@echo "  - Milestone 3+: Add control and runtime templates"
+generate: validate-templates ## Generate all manifests using generate-manifests.sh
+	@echo "Generating manifests..."
+	@devbox run -- ./scripts/generate-manifests.sh
+
+generate-phase1-database: validate-templates ## Generate Phase 1 database manifest only
+	@echo "Generating Phase 1 Database manifest..."
+	@mkdir -p manifests/generated
+	@devbox run -- ytt \
+		-f manifests/templates/schema.yml \
+		-f manifests/templates/values.yml \
+		-f manifests/cf-deployment/cf-deployment.yml \
+		-f manifests/templates/base/apply-use-postgres.yml \
+		-f manifests/templates/base/apply-bosh-lite.yml \
+		-f manifests/templates/phases/phase1/database.yml \
+		> manifests/generated/instant-cf-phase1-database.yml
+	@echo "✅ Generated: manifests/generated/instant-cf-phase1-database.yml"

@@ -1,6 +1,3 @@
-# Generated manifests (should be regenerated from templates)
-manifests/generated/
-
 # Vendored dependencies (managed by vendir)
 manifests/cf-deployment/
 

@@ -10,17 +10,16 @@
 #@overlay/match by=overlay.all, expects="1+"
 ---
 instance_groups:
-#@overlay/match by=overlay.all
-- name: placeholder
-  instances: 1
+#@overlay/match by=overlay.all, expects="1+"
+- instances: 1
 
 #! Optimize diego-cell for local development
-#@overlay/match by=overlay.subset({"name": "diego-cell"})
+#@overlay/match by=overlay.subset({"name": "diego-cell"}), expects="0+"
 ---
 instance_groups:
 - name: diego-cell
   jobs:
-  #@overlay/match by=overlay.subset({"name": "rep"})
+  #@overlay/match by=overlay.subset({"name": "rep"}), expects="0+"
   - name: rep
     properties:
       #! Fast shutdown for local dev (don't wait for graceful evacuation)
@@ -28,7 +27,7 @@ instance_groups:
       #! Don't modify kernel parameters (may not have permissions)
       set_kernel_parameters: false
   
-  #@overlay/match by=overlay.subset({"name": "garden"})
+  #@overlay/match by=overlay.subset({"name": "garden"}), expects="0+"
   - name: garden
     properties:
       garden:
@@ -38,12 +37,12 @@ instance_groups:
         - --configFile=/var/vcap/jobs/garden-cni/config/adapter.json
 
 #! Optimize Cloud Controller for local development
-#@overlay/match by=overlay.subset({"name": "api"})
+#@overlay/match by=overlay.subset({"name": "api"}), expects="0+"
 ---
 instance_groups:
 - name: api
   jobs:
-  #@overlay/match by=overlay.subset({"name": "cloud_controller_ng"})
+  #@overlay/match by=overlay.subset({"name": "cloud_controller_ng"}), expects="0+"
   - name: cloud_controller_ng
     properties:
       cc:
