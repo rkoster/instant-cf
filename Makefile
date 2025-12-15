@@ -2,6 +2,13 @@
 
 .PHONY: help sync generate generate-phase1-database validate-templates
 
+# Phase 1 Database template files (order matters for ytt overlays)
+PHASE1_DB_YTT_FILES := \
+	manifests/templates/schema.yml \
+	manifests/templates/values.yml \
+	manifests/templates/base/remove-addons.yml \
+	manifests/templates/phases/phase1/database.yml
+
 # Default target - show help
 help: ## Show available commands
 	@echo "Available targets:"
@@ -27,12 +34,5 @@ generate: validate-templates ## Generate all manifests using generate-manifests.
 generate-phase1-database: validate-templates ## Generate Phase 1 database manifest only
 	@echo "Generating Phase 1 Database manifest..."
 	@mkdir -p manifests/generated
-	@devbox run -- ytt \
-		-f manifests/templates/schema.yml \
-		-f manifests/templates/values.yml \
-		-f manifests/cf-deployment/cf-deployment.yml \
-		-f manifests/templates/base/apply-use-postgres.yml \
-		-f manifests/templates/base/apply-bosh-lite.yml \
-		-f manifests/templates/phases/phase1/database.yml \
-		> manifests/generated/instant-cf-phase1-database.yml
+	@devbox run -- ./scripts/generate-manifests.sh phase1-database
 	@echo "✅ Generated: manifests/generated/instant-cf-phase1-database.yml"

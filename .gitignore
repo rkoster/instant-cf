@@ -1,6 +1,9 @@
 # Vendored dependencies (managed by vendir)
 manifests/cf-deployment/
 
+# Temporary build artifacts
+.tmp/
+
 # Variables file (may contain credentials)
 vars.yml
 
