@@ -1,0 +1,13 @@
+#! load-cf-deployment.yml
+#! Load the base cf-deployment.yml from vendored directory
+
+#@ load("@ytt:data", "data")
+
+#! Load cf-deployment.yml
+#! This will be vendored by vendir into manifests/cf-deployment/
+--- #@ load("../cf-deployment/cf-deployment.yml", "deployment")
+
+#! Return the loaded deployment
+#@ def get_cf_deployment():
+#@   return deployment
+#@ end
