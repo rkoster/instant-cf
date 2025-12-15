@@ -1,3 +1,5 @@
+.DEFAULT_GOAL := help
+
 .PHONY: help sync generate
 
 # Default target - show help

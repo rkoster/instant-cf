@@ -9,4 +9,4 @@ directories:
   - path: .
     git:
       url: https://github.com/cloudfoundry/cf-deployment
-      ref: v53.8.0
+      ref: v53.*
