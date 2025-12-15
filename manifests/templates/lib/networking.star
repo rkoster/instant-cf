@@ -122,6 +122,10 @@ def get_static_ips_from_values(data_values, phase):
     """
     Get appropriate static IPs based on deployment phase.
     
+    Phase 1: 3 containers (database, control, runtime)
+    Phase 2a: 2 containers (data=database, platform=control)  
+    Phase 2b: 1 container (all=database)
+    
     Args:
         data_values: YTT data values
         phase: Deployment phase (1, 2a, 2b)
@@ -136,11 +140,13 @@ def get_static_ips_from_values(data_values, phase):
             "runtime": data_values.network.ips.runtime
         }
     elif phase == "2a":
+        # Phase 2a: data container (database+blobstore) and platform container (control+runtime)
         return {
             "data": data_values.network.ips.database,
             "platform": data_values.network.ips.control
         }
     elif phase == "2b":
+        # Phase 2b: Single all-in-one container
         return {
             "all": data_values.network.ips.database
         }

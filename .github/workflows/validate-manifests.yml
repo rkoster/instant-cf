@@ -1,0 +1,51 @@
+name: Validate Manifests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate:
+    name: Generate and Validate Manifests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v27
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Install Devbox
+        uses: jetify-com/devbox-install-action@v0.11.0
+        with:
+          enable-cache: true
+
+      - name: Sync vendored dependencies
+        run: devbox run vendir sync
+
+      - name: Generate manifests
+        run: devbox run -- make generate
+
+      - name: Check for uncommitted changes
+        run: |
+          if [[ -n $(git status --porcelain) ]]; then
+            echo "Error: Generated manifests have uncommitted changes"
+            echo "Please run 'make generate' and commit the resulting manifests"
+            git status --porcelain
+            git diff
+            exit 1
+          fi
+          echo "✅ All generated manifests are up to date"
+
+      - name: Summary
+        run: |
+          echo "✅ Manifest validation complete"
+          echo ""
+          echo "Note: Phase-specific manifests (phase-1-*.yml) will be generated"
+          echo "      in Milestone 2+. Current validation ensures template foundation"
+          echo "      is correct and ready for manifest generation."

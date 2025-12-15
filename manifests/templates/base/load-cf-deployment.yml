@@ -1,13 +1,22 @@
 #! load-cf-deployment.yml
 #! Load the base cf-deployment.yml from vendored directory
+#!
+#! This file is included in YTT template processing to make the cf-deployment
+#! manifest available to other templates. The deployment is loaded via the
+#! --- #@ load() directive below, which makes it available to all YTT overlays.
+#!
+#! Usage: Simply include this file when running ytt:
+#!   ytt -f manifests/templates/base/load-cf-deployment.yml \
+#!       -f manifests/templates/base/apply-*.yml \
+#!       -f manifests/templates/values.yml
 
 #@ load("@ytt:data", "data")
 
-#! Load cf-deployment.yml
-#! This will be vendored by vendir into manifests/cf-deployment/
+#! Load cf-deployment.yml (vendored by vendir into manifests/cf-deployment/)
+#! This makes the entire cf-deployment manifest available to overlay operations
 --- #@ load("../cf-deployment/cf-deployment.yml", "deployment")
 
-#! Return the loaded deployment
+#! Helper function to access the loaded deployment (optional, for library usage)
 #@ def get_cf_deployment():
 #@   return deployment
 #@ end

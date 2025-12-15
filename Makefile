@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help sync generate
+.PHONY: help sync generate validate-templates
 
 # Default target - show help
 help: ## Show available commands
@@ -12,7 +12,18 @@ sync: ## Run vendir sync to update vendored dependencies
 	@devbox run vendir sync
 	@echo "Sync complete!"
 
-generate: ## Generate manifests (placeholder for future implementation)
-	@echo "Generate target is not yet implemented"
-	@echo "This will be used to generate Cloud Foundry deployment manifests"
-	@exit 1
+validate-templates: ## Validate YTT templates can be loaded
+	@echo "Validating YTT templates..."
+	@echo "  - Checking schema.yml and values.yml..."
+	@devbox run -- ytt -f manifests/templates/schema.yml \
+		-f manifests/templates/values.yml \
+		--data-values-inspect > /dev/null || { echo "❌ Schema/values validation failed"; exit 1; }
+	@echo "✅ Template validation successful"
+
+generate: validate-templates ## Generate manifests (Milestone 1: validates templates only)
+	@echo "Note: Phase-specific manifest generation will be implemented in Milestone 2+"
+	@echo "Current milestone (1) provides template foundation and validation."
+	@echo ""
+	@echo "Next steps:"
+	@echo "  - Milestone 2: Implement phase1/database.yml template"
+	@echo "  - Milestone 3+: Add control and runtime templates"

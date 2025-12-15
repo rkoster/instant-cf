@@ -33,7 +33,7 @@ skip:
 #! Database configuration
 database:
   #! PostgreSQL port
-  port: 0
+  port: 5432
   #! Database host (will be set to static IP or localhost based on phase)
   host: ""
 
