@@ -1,0 +1,38 @@
+#@data/values
+---
+#! Phase 1: Multi-container architecture (database, control, runtime)
+phase: "1"
+
+#! Network configuration for Docker containers
+network:
+  name: instant-cf
+  subnet: 10.245.0.0/24
+  gateway: 10.245.0.1
+  ips:
+    database: 10.245.0.10
+    control: 10.245.0.20
+    runtime: 10.245.0.30
+
+#! Domain configuration using nip.io for easy local development
+system_domain: 10.245.0.20.nip.io
+apps_domain: apps.10.245.0.20.nip.io
+
+#! Skip optional components initially for minimal footprint
+skip:
+  credhub: true
+  tcp_router: false
+  log_cache: true
+
+#! Database configuration
+database:
+  port: 5524
+  host: 10.245.0.10
+
+#! Blobstore configuration (colocated on control plane)
+blobstore:
+  host: localhost
+
+#! Enable BOSH variables for static IPs
+#! This allows static IPs to be passed at deployment time
+bosh_variables:
+  enabled: true

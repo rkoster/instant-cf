@@ -1,0 +1,50 @@
+#@data/values-schema
+---
+#! Phase configuration (1, 2a, 2b)
+phase: ""
+
+#! Network configuration
+network:
+  #! Docker network name
+  name: ""
+  #! Network subnet (CIDR notation)
+  subnet: ""
+  #! Gateway IP address
+  gateway: ""
+  #! Static IP assignments for containers
+  ips:
+    database: ""
+    control: ""
+    runtime: ""
+
+#! Domain configuration
+system_domain: ""
+apps_domain: ""
+
+#! Optional component flags
+skip:
+  #! Skip CredHub instance group (runtime credential management)
+  credhub: false
+  #! Skip TCP Router instance group (TCP routing for non-HTTP apps)
+  tcp_router: false
+  #! Skip Log Cache instance group (advanced log querying)
+  log_cache: false
+
+#! Database configuration
+database:
+  #! PostgreSQL port
+  port: 5432
+  #! Database host (will be set to static IP or localhost based on phase)
+  host: ""
+
+#! Blobstore configuration
+blobstore:
+  #! Blobstore host (will be set based on phase colocation)
+  host: ""
+
+#! BOSH variables (static IPs become BOSH variables for runtime assignment)
+bosh_variables:
+  #! Enable BOSH variables for static IPs
+  #! When true, static IPs are declared as BOSH variables in manifest
+  #! This allows passing them at deployment time
+  enabled: true

@@ -1,0 +1,67 @@
+#! apply-use-postgres.yml
+#! Apply use-postgres ops file to replace MySQL with PostgreSQL
+
+#@ load("@ytt:overlay", "overlay")
+#@ load("@ytt:data", "data")
+
+#! Remove existing database instance group (contains MySQL PXC cluster)
+#! expects="0+" handles case where database group doesn't exist or was already removed
+#@overlay/match by=overlay.subset({"name": "database"}), expects="0+"
+#@overlay/remove
+---
+instance_groups:
+- name: database
+
+#! Add postgres instance group
+#! This replaces the MySQL cluster with a single PostgreSQL instance
+#@overlay/match missing_ok=True
+---
+instance_groups:
+#@overlay/append
+- name: database
+  azs:
+  - z1
+  instances: 1
+  vm_type: minimal
+  stemcell: default
+  networks:
+  - name: default
+  persistent_disk_type: 10GB
+  jobs:
+  - name: postgres
+    release: postgres
+    properties:
+      databases:
+        port: #@ data.values.database.port
+        databases:
+        - name: cloud_controller
+          citext: true
+        - name: uaa
+        - name: diego
+        - name: network_policy
+        - name: network_connectivity
+        - name: routing-api
+        - name: locket
+        roles:
+        - name: cloud_controller
+          password: ((cc_database_password))
+        - name: uaa
+          password: ((uaa_database_password))
+        - name: diego
+          password: ((diego_database_password))
+        - name: network_policy
+          password: ((network_policy_database_password))
+        - name: network_connectivity
+          password: ((network_connectivity_database_password))
+        - name: routing-api
+          password: ((routing_api_database_password))
+        - name: locket
+          password: ((locket_database_password))
+
+#! Add postgres release to releases list
+#@overlay/match missing_ok=True
+---
+releases:
+#@overlay/append
+- name: postgres
+  version: latest

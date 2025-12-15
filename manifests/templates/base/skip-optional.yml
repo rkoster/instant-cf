@@ -1,0 +1,36 @@
+#! skip-optional.yml
+#! Conditionally remove optional Cloud Foundry components
+#! Based on data.values.skip configuration
+
+#@ load("@ytt:overlay", "overlay")
+#@ load("@ytt:data", "data")
+
+#! Remove credhub instance group if skip.credhub is true
+#! CredHub provides runtime credential management
+#@ if data.values.skip.credhub:
+#@overlay/match by=overlay.subset({"name": "credhub"}), expects="0+"
+#@overlay/remove
+---
+instance_groups:
+- name: credhub
+#@ end
+
+#! Remove log-cache instance group if skip.log_cache is true
+#! Log Cache provides advanced log querying capabilities
+#@ if data.values.skip.log_cache:
+#@overlay/match by=overlay.subset({"name": "log-cache"}), expects="0+"
+#@overlay/remove
+---
+instance_groups:
+- name: log-cache
+#@ end
+
+#! Remove tcp-router instance group if skip.tcp_router is true
+#! TCP Router enables TCP routing for non-HTTP applications
+#@ if data.values.skip.tcp_router:
+#@overlay/match by=overlay.subset({"name": "tcp-router"}), expects="0+"
+#@overlay/remove
+---
+instance_groups:
+- name: tcp-router
+#@ end
