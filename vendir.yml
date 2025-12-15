@@ -9,4 +9,6 @@ directories:
   - path: .
     git:
       url: https://github.com/cloudfoundry/cf-deployment
-      ref: v53.*
+      refSelection:
+        semver:
+          constraints: ">=53.0.0 <54.0.0"
