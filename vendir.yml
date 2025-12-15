@@ -1,0 +1,13 @@
+apiVersion: vendir.k14s.io/v1alpha1
+kind: Config
+
+minimumRequiredVersion: 0.12.0
+
+directories:
+- path: manifests/cf-deployment
+  contents:
+  - path: .
+    githubRelease:
+      slug: cloudfoundry/cf-deployment
+      tag: v53.8.0
+      disableAutoChecksumValidation: true

@@ -1,0 +1,41 @@
+# Generated manifests (should be regenerated from templates)
+manifests/generated/
+
+# Vendored dependencies (managed by vendir)
+manifests/cf-deployment/
+
+# Variables file (may contain credentials)
+vars.yml
+
+# Runtime data directories
+data/
+stemcells/
+
+# Go build artifacts
+icf
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+go.work.sum
+
+# Devbox
+.devbox/
+
+# macOS
+.DS_Store
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Test fixtures output
+test/fixtures/output/
