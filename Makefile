@@ -7,7 +7,7 @@ help: ## Show available commands
 
 sync: ## Run vendir sync to update vendored dependencies
 	@echo "Syncing vendored dependencies..."
-	@eval "$$(devbox shellenv)" && vendir sync
+	@devbox run vendir sync
 	@echo "Sync complete!"
 
 generate: ## Generate manifests (placeholder for future implementation)
