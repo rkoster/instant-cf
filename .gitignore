@@ -1,8 +1,8 @@
-# Generated manifests (should be regenerated from templates)
-manifests/generated/
-
 # Vendored dependencies (managed by vendir)
 manifests/cf-deployment/
+
+# Temporary build artifacts
+.tmp/
 
 # Variables file (may contain credentials)
 vars.yml

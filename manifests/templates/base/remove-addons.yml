@@ -1,0 +1,12 @@
+#! remove-addons.yml
+#! Remove addons section from the manifest
+#! Addons are not compatible with Bosh OCI Builder (bob) and need to be 
+#! transformed into jobs in instance groups instead
+
+#@ load("@ytt:overlay", "overlay")
+
+#! Remove the addons section entirely
+#@overlay/match by=overlay.all, expects="1+"
+---
+#@overlay/remove
+addons:

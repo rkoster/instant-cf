@@ -1,0 +1,37 @@
+#! database.yml
+#! Phase 1: Database-only manifest
+#! Filters cf-deployment to only include the database instance group with postgres job
+#! and applies Phase 1 network configuration (static IP on instant-cf network)
+
+#@ load("@ytt:overlay", "overlay")
+#@ load("@ytt:data", "data")
+
+#! Remove all instance groups except database
+#! This is applied FIRST
+#@overlay/match by=overlay.all, expects="1+"
+---
+instance_groups:
+#@overlay/match by=lambda idx,left,right: left["name"] != "database", expects="0+"
+#@overlay/remove
+- name: placeholder
+
+#! Configure database instance group for Phase 1
+#! This is applied AFTER removing other groups
+#@overlay/match by=overlay.all, expects="1+"
+---
+instance_groups:
+#@overlay/match by=lambda idx,left,right: left["name"] == "database"
+- name: database
+  instances: 1
+  #! Replace networks array with instant-cf network configuration
+  #@overlay/replace
+  networks:
+  - name: #@ data.values.network.name
+    #! Set static IP for database container
+    static_ips:
+    - #@ data.values.network.ips.database
+  #! Keep only postgres job - remove any other jobs if they exist
+  jobs:
+  #@overlay/match by=lambda idx,left,right: left["name"] != "postgres", expects="0+"
+  #@overlay/remove
+  - name: placeholder
