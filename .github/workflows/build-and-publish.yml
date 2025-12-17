@@ -20,7 +20,7 @@ env:
 
 jobs:
   build-and-push:
-    runs-on: instant-bosh-dind
+    runs-on: instant-cf-dind
     timeout-minutes: 60
     permissions:
       contents: read
