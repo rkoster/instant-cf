@@ -1,0 +1,93 @@
+name: Build and Publish Docker Image
+
+on:
+  push:
+    branches:
+      - '**'
+    tags:
+      - 'v*'
+    paths:
+      - 'manifests/**'
+      - 'scripts/**'
+      - 'Makefile'
+      - 'devbox.json'
+      - 'devbox.lock'
+      - '.github/workflows/build-and-publish.yml'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-push:
+    runs-on: instant-bosh-dind
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-database
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v20
+        with:
+          extra-conf: |
+            extra-experimental-features = nix-command flakes
+
+      - name: Install Devbox
+        run: |
+          curl -fsSL https://get.jetify.com/devbox | bash -s -- -f
+          devbox version
+
+      - name: Install bob (BOSH OCI Builder)
+        env:
+          GH_TOKEN: ${{ secrets.GIT_BOB_PULL_SECRET }}
+        run: |
+          # Clone the bob repository using the token
+          git clone https://x-access-token:${GH_TOKEN}@github.com/rkoster/bosh-oci-builder.git /tmp/bosh-oci-builder
+          
+          # Add bob flake from the cloned repo to devbox
+          devbox add path:/tmp/bosh-oci-builder#bob
+          
+          # Verify installation
+          devbox run -- bob --help
+
+      - name: Build BOSH OCI image with bob
+        timeout-minutes: 30
+        run: |
+          devbox run -- make build-phase1-database
+
+      - name: Tag and push image
+        run: |
+          # Tag the image with all metadata tags
+          echo "${{ steps.meta.outputs.tags }}" | while read tag; do
+            echo "Tagging ghcr.io/rkoster/instant-cf-database:latest as $tag"
+            docker tag ghcr.io/rkoster/instant-cf-database:latest "$tag"
+            echo "Pushing $tag"
+            docker push "$tag"
+          done

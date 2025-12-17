@@ -7,8 +7,8 @@
 #
 # Examples:
 #   ./scripts/build-images.sh phase1 database
-#   ./scripts/build-images.sh phase1 control
-#   ./scripts/build-images.sh phase1 runtime
+#   ./scripts/build-images.sh phase1 control    # (planned for Milestone 5, not yet implemented)
+#   ./scripts/build-images.sh phase1 runtime    # (planned for Milestone 4, not yet implemented)
 #   ./scripts/build-images.sh phase1 all
 #
 
@@ -128,15 +128,15 @@ build_image() {
         log_success "Build complete: ${image}"
         
         # Verify image was created
-        if docker images "${image}" | grep -q "${TAG}"; then
+        if docker images "${image}" | grep -F -q "${TAG}"; then
             log_success "Image verified in local registry"
             
             # Show image info
             log_info "Image details:"
-            docker images "${image}" | grep "${TAG}"
+            docker images "${image}" | grep -F "${TAG}"
             
             # Show image size
-            local size=$(docker images "${image}" --format "{{.Size}}" | head -1)
+            local size=$(docker images "${image}" --format "{{.Size}}")
             log_info "Image size: ${size}"
         else
             log_warning "Image not found in local registry"
@@ -163,7 +163,7 @@ build_phase1_all() {
     # Build database first (other components depend on it)
     if ! build_image "phase1" "database"; then
         log_error "Database build failed"
-        ((failed++))
+        failed=$((failed + 1))
     fi
     
     log_info ""
@@ -171,6 +171,7 @@ build_phase1_all() {
     log_info ""
     
     # Note: Control and runtime builds will be added in future milestones
+    # TODO: Add runtime before control (Milestone 4 before 5)
     log_warning "Control and runtime containers not yet implemented"
     log_info "Current milestone (Milestone 3) focuses on database container only"
     log_info ""
@@ -195,8 +196,8 @@ main() {
         echo ""
         echo "Examples:"
         echo "  $0 phase1 database  - Build database container"
-        echo "  $0 phase1 control   - Build control container (future)"
-        echo "  $0 phase1 runtime   - Build runtime container (future)"
+        echo "  $0 phase1 runtime   - Build runtime container (Milestone 4, not yet implemented)"
+        echo "  $0 phase1 control   - Build control container (Milestone 5, not yet implemented)"
         echo "  $0 phase1 all       - Build all Phase 1 containers"
         exit 1
     fi
@@ -211,8 +212,10 @@ main() {
         exit 1
     fi
     
-    # Change to repository root
-    cd "$(dirname "$0")/.."
+    # Change to repository root (robust to symlinks)
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+    cd "${PROJECT_ROOT}"
     
     log_info "instant-cf Container Build"
     log_info "Registry: ${REGISTRY}"

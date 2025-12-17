@@ -35,6 +35,6 @@ build-phase1-database: generate-phase1-database ## Build Phase 1 database contai
 	@echo "Building Phase 1 Database container..."
 	@devbox run -- ./scripts/build-images.sh phase1 database
 
-build-phase1: ## Build all Phase 1 containers (database, control, runtime)
+build-phase1: generate ## Build all Phase 1 containers (database, control, runtime)
 	@echo "Building all Phase 1 containers..."
 	@devbox run -- ./scripts/build-images.sh phase1 all
