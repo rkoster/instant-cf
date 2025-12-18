@@ -54,11 +54,10 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@main
+        uses: cachix/install-nix-action@v30
         with:
-          determinate: false
-          extra-conf: |
-            extra-experimental-features = nix-command flakes
+          extra_nix_config: |
+            experimental-features = nix-command flakes
 
       - name: Install Devbox
         run: |
