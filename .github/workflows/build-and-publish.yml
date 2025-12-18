@@ -53,6 +53,11 @@ jobs:
             type=sha
             type=raw,value=latest,enable={{is_default_branch}}
 
+      - name: Install xz-utils
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xz-utils
+
       - name: Install Nix
         uses: cachix/install-nix-action@v30
         with:
