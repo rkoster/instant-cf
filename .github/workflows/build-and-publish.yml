@@ -54,8 +54,9 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@v21
+        uses: DeterminateSystems/nix-installer-action@main
         with:
+          determinate: false
           extra-conf: |
             extra-experimental-features = nix-command flakes
 
