@@ -82,6 +82,10 @@ jobs:
           # Verify installation
           devbox run -- bob --help
 
+      - name: Sync vendored dependencies
+        run: |
+          devbox run -- make sync
+
       - name: Build BOSH OCI image with bob
         timeout-minutes: 30
         run: |
