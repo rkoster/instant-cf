@@ -12,3 +12,7 @@ directories:
       refSelection:
         semver:
           constraints: ">=53.0.0 <54.0.0"
+    includePaths:
+    - cf-deployment.yml
+    - operations/use-postgres.yml
+    - operations/bosh-lite.yml
