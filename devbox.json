@@ -19,7 +19,8 @@
         "",
         "# Verify installation",
         "bob --help"
-      ]
+      ],
+      "generate": "./scripts/generate-manifests.sh"
     }
   }
 }
