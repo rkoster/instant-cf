@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help sync generate generate-phase1-database validate-templates
+.PHONY: help sync generate generate-phase1-database validate-templates build-phase1-database build-phase1
 
 # Default target - show help
 help: ## Show available commands
@@ -30,3 +30,11 @@ generate-phase1-database: ## Generate Phase 1 database manifest only
 	@mkdir -p manifests/generated
 	@devbox run -- ./scripts/generate-manifests.sh phase1-database
 	@echo "✅ Generated: manifests/generated/instant-cf-phase1-database.yml"
+
+build-phase1-database: generate-phase1-database ## Build Phase 1 database container with bob
+	@echo "Building Phase 1 Database container..."
+	@devbox run -- ./scripts/build-images.sh phase1 database
+
+build-phase1: generate ## Build all Phase 1 containers (database, control, runtime)
+	@echo "Building all Phase 1 containers..."
+	@devbox run -- ./scripts/build-images.sh phase1 all

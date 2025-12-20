@@ -4,6 +4,7 @@
     "vendir@latest",
     "go@latest",
     "ytt@latest",
-    "bosh-cli@latest"
+    "bosh-cli@latest",
+    "docker@latest"
   ]
 }
