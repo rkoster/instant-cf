@@ -9,21 +9,17 @@ on:
 jobs:
   validate:
     name: Generate and Validate Manifests
-    runs-on: ubuntu-latest
+    runs-on: instant-cf-cached-privileged-kubernetes
+    container:
+      image: nixery.dev/shell/bash/findutils/coreutils/gnutar/gnugrep/gzip/busybox/cacert
+      options: --privileged --init
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Nix
-        uses: cachix/install-nix-action@v27
-        with:
-          nix_path: nixpkgs=channel:nixos-unstable
-
-      - name: Install Devbox
-        uses: jetify-com/devbox-install-action@v0.11.0
-        with:
-          enable-cache: true
+      - name: Setup Docker and Nix Store
+        run: .github/scripts/docker-setup.sh --skip-docker
 
       - name: Sync vendored dependencies
         run: devbox run vendir sync

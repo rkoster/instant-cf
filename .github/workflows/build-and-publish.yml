@@ -20,7 +20,10 @@ env:
 
 jobs:
   build-and-push:
-    runs-on: instant-cf-dind
+    runs-on: instant-cf-cached-privileged-kubernetes
+    container:
+      image: nixery.dev/shell/bash/findutils/coreutils/gnutar/gnugrep/gzip/busybox/cacert
+      options: --privileged --init
     timeout-minutes: 60
     permissions:
       contents: read
@@ -29,6 +32,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Setup Docker and Nix Store
+        run: .github/scripts/docker-setup.sh
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -53,34 +59,12 @@ jobs:
             type=sha
             type=raw,value=latest,enable={{is_default_branch}}
 
-      - name: Install xz-utils
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y xz-utils
-
-      - name: Install Nix
-        uses: cachix/install-nix-action@v30
-        with:
-          extra_nix_config: |
-            experimental-features = nix-command flakes
-
-      - name: Install Devbox
-        run: |
-          curl -fsSL https://get.jetify.com/devbox | bash -s -- -f
-          devbox version
-
       - name: Install bob (BOSH OCI Builder)
         env:
           GH_TOKEN: ${{ secrets.GIT_BOB_PULL_SECRET }}
         run: |
-          # Clone the bob repository using the token
-          git clone https://x-access-token:${GH_TOKEN}@github.com/rkoster/bosh-oci-builder.git /tmp/bosh-oci-builder
-          
-          # Add bob flake from the cloned repo to devbox
-          devbox add path:/tmp/bosh-oci-builder#bob
-          
-          # Verify installation
-          devbox run -- bob --help
+          # Use devbox script to install bob CLI
+          devbox run install-bob
 
       - name: Sync vendored dependencies
         run: |
@@ -89,7 +73,10 @@ jobs:
       - name: Build BOSH OCI image with bob
         timeout-minutes: 30
         run: |
-          devbox run -- make build-phase1-database
+          # Build the database image using bob
+          devbox run -- bob build \
+            --manifest manifests/generated/instant-cf-phase1-database.yml \
+            --output instant-cf-database:latest
 
       - name: Tag and push image
         run: |
@@ -112,3 +99,27 @@ jobs:
             echo "Pushing $tag"
             docker push "$tag"
           done
+
+      - name: Tag and push image
+        run: |
+          # Find the image that bob created and tag it with all metadata tags
+          # Bob may create the image with a different name than expected
+          IMAGE_ID=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep "instant-cf-database" | grep -v "none" | head -1)
+          
+          if [ -z "$IMAGE_ID" ]; then
+            echo "Error: Could not find instant-cf-database image"
+            docker images
+            exit 1
+          fi
+          
+          echo "Found image: $IMAGE_ID"
+          
+          # Tag and push with all metadata tags
+          echo "${{ steps.meta.outputs.tags }}" | while read tag; do
+            echo "Tagging $IMAGE_ID as $tag"
+            docker tag "$IMAGE_ID" "$tag"
+            echo "Pushing $tag"
+            docker push "$tag"
+          done
+        env:
+          NIX_REMOTE: daemon
