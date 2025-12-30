@@ -1,9 +1,10 @@
 #!/bin/bash
-# docker-setup.sh - Bootstrap nix environment using host's nix store (deskrun pattern)
+# devbox-setup.sh - Bootstrap nix/devbox environment using host's nix store (deskrun pattern)
 #
 # === Overview ===
 # This script implements the "deskrun pattern" which provides persistent caching across
-# CI runs by mounting the host's nix store and docker cache into the container.
+# CI runs by mounting the host's nix store into the container. The host Docker daemon
+# is available at /var/run/docker.sock for container builds.
 #
 # === Strategy ===
 #   1. Copy busybox binary before mounting (provides mount, find, grep, etc.)
@@ -11,13 +12,12 @@
 #   3. Copy GitHub workspace directories from /__w/_temp/_github_* to /github/*
 #   4. Bind mount host /nix/store over container's /nix/store
 #   5. Bind mount host daemon socket to /nix/var/nix/daemon-socket
-#   6. Install devbox and docker via host nix daemon using flake references
-#   7. Start dockerd with persistent cache (if not skipped)
+#   6. Install devbox and docker client via host nix daemon using flake references
 #
 # === Volume Mounts (configured in deskrun runner) ===
 #   - /nix/store-host        <- Host's nix store (bind mounted to /nix/store in Phase 1)
 #   - /nix/var/nix/daemon-socket-host <- Host's nix daemon (bind mounted to /nix/var/nix/daemon-socket in Phase 1)
-#   - /var/lib/docker        <- Host's docker cache (persistent across runs)
+#   - /var/run/docker.sock   <- Host's docker daemon socket (available for docker client)
 #
 # === Why Busybox? ===
 # After mounting the host store over /nix/store, all Nixery-provided binaries become unavailable
@@ -35,26 +35,9 @@
 # - Other tools: required by GitHub Actions (actions/checkout@v4, etc.)
 #
 # === Usage ===
-# docker-setup.sh [--skip-docker]
-#   --skip-docker: Skip Docker daemon setup (for workflows that only need Nix/Devbox)
+# devbox-setup.sh
 
 set -e
-
-# Parse command line arguments
-SKIP_DOCKER=false
-while [ $# -gt 0 ]; do
-    case $1 in
-        --skip-docker)
-            SKIP_DOCKER=true
-            shift
-            ;;
-        *)
-            echo "Unknown option: $1"
-            echo "Usage: $0 [--skip-docker]"
-            exit 1
-            ;;
-    esac
-done
 
 # Color codes for output
 RED='\033[0;31m'
@@ -89,7 +72,7 @@ log_error() {
 # - /tmp/bootstrap: for use during this script
 # - /bin: for persistence across all GitHub Actions workflow steps
 log_info "=========================================="
-log_info "Docker Setup Script (host nix store)"
+log_info "Devbox Setup Script (deskrun pattern)"
 log_info "=========================================="
 log_info ""
 log_info "Phase 0: Copying busybox before host mount..."
@@ -352,7 +335,8 @@ echo ""
 # ============================================================================
 # PHASE 3: Install Required Packages
 # ============================================================================
-# Install devbox and docker using 'nix profile install' with flake references (nixpkgs#package).
+# Install devbox and docker client using 'nix profile install' with flake references (nixpkgs#package).
+# The docker client connects to the host Docker daemon at /var/run/docker.sock (no need to start dockerd).
 # 
 # WHY FLAKE REFERENCES:
 # - Don't require local nix channels to be configured
@@ -378,12 +362,12 @@ else
 fi
 log_info ""
 
-# Install docker
-log_info "Installing docker from nixpkgs flake..."
+# Install docker client
+log_info "Installing docker client from nixpkgs flake..."
 if nix profile install nixpkgs#docker 2>&1 | head -20; then
-    log_success "Installed docker"
+    log_success "Installed docker client"
 else
-    log_error "Failed to install docker"
+    log_error "Failed to install docker client"
     exit 1
 fi
 log_info ""
@@ -403,97 +387,26 @@ fi
 
 if command -v docker >/dev/null 2>&1; then
     DOCKER_VERSION=$(docker --version 2>&1 | head -1 || echo "unknown")
-    log_success "docker is available: $DOCKER_VERSION"
+    log_success "docker client is available: $DOCKER_VERSION"
+    
+    # Verify docker can connect to host daemon
+    if [ -S "/var/run/docker.sock" ]; then
+        log_info "Verifying connection to host Docker daemon..."
+        if docker info >/dev/null 2>&1; then
+            log_success "Successfully connected to host Docker daemon"
+        else
+            log_warn "Docker socket exists but connection failed (this may be normal if daemon is not yet ready)"
+        fi
+    else
+        log_warn "Docker socket /var/run/docker.sock not found (ensure host daemon socket is mounted)"
+    fi
 else
-    log_error "docker not found in PATH after installation"
+    log_error "docker client not found in PATH after installation"
     exit 1
 fi
 
 log_success "Phase 3: Package installation complete"
 echo ""
-
-# ============================================================================
-# PHASE 4: Start Docker Daemon (if not skipped)
-# ============================================================================
-if [ "$SKIP_DOCKER" = "false" ]; then
-    log_info "Phase 4: Starting Docker daemon..."
-    
-    # Determine docker data directory
-    DOCKER_DATA_DIR="/var/lib/docker"
-    if [ -d "/var/lib/docker" ]; then
-        log_info "Using persistent docker cache from host volume"
-    else
-        log_info "Using ephemeral docker cache (no host volume)"
-        mkdir -p /var/lib/docker
-    fi
-    
-    # Create docker socket directory
-    mkdir -p /var/run
-    
-    # Docker daemon configuration
-    mkdir -p /etc/docker
-    cat > /etc/docker/daemon.json <<'EOF'
-{
-  "storage-driver": "overlay2",
-  "log-driver": "json-file",
-  "log-opts": {
-    "max-size": "10m",
-    "max-file": "3"
-  }
-}
-EOF
-    
-    log_info "Starting dockerd..."
-    log_info "Docker socket will be available at unix:///var/run/docker.sock"
-    log_info "Docker logs will be written to /tmp/dockerd.log"
-    
-    # Start dockerd in background
-    dockerd --data-root="$DOCKER_DATA_DIR" > /tmp/dockerd.log 2>&1 &
-    DOCKERD_PID=$!
-    
-    # Wait for docker daemon to be ready
-    MAX_ATTEMPTS=60
-    ATTEMPT=0
-    
-    while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
-        if docker info >/dev/null 2>&1; then
-            log_success "Docker daemon is ready"
-            
-            # Show docker info
-            log_info "Docker info:"
-            docker info 2>&1 | grep -E "(Storage Driver|Docker Root Dir)" || true
-            
-            log_success "Phase 4: Docker daemon startup complete"
-            break
-        fi
-        
-        # Check if dockerd process is still running
-        if ! kill -0 $DOCKERD_PID 2>/dev/null; then
-            log_error "Docker daemon process died"
-            log_error "Last 20 lines of docker logs:"
-            tail -20 /tmp/dockerd.log || true
-            exit 1
-        fi
-        
-        ATTEMPT=$((ATTEMPT + 1))
-        if [ $((ATTEMPT % 10)) -eq 0 ]; then
-            log_info "Still waiting for docker daemon... (attempt $ATTEMPT/$MAX_ATTEMPTS)"
-        fi
-        
-        sleep 1
-    done
-    
-    if [ $ATTEMPT -ge $MAX_ATTEMPTS ]; then
-        log_error "Docker daemon failed to become ready within timeout"
-        log_error "Last 30 lines of docker logs:"
-        tail -30 /tmp/dockerd.log || true
-        exit 1
-    fi
-    echo ""
-else
-    log_info "Skipping Docker daemon setup (--skip-docker flag provided)"
-    echo ""
-fi
 
 # ============================================================================
 # Export Environment Variables for GitHub Actions
@@ -521,11 +434,7 @@ echo ""
 # Summary
 # ============================================================================
 log_success "=========================================="
-if [ "$SKIP_DOCKER" = "false" ]; then
-    log_success "Nix and Docker setup complete!"
-else
-    log_success "Nix setup complete!"
-fi
+log_success "Devbox setup complete!"
 log_success "=========================================="
 log_info ""
 log_info "Environment variables set:"
@@ -534,11 +443,8 @@ log_info "  NIX_DAEMON_SOCKET_PATH=/nix/var/nix/daemon-socket/socket"
 log_info "  PATH includes ~/.nix-profile/bin"
 log_info ""
 log_info "Installed tools:"
-log_info "  - devbox (via nix-env)"
-log_info "  - docker (via nix-env)"
-if [ "$SKIP_DOCKER" = "false" ]; then
-    log_info "  - dockerd (running)"
-fi
+log_info "  - devbox"
+log_info "  - docker client (connects to host daemon at /var/run/docker.sock)"
 log_info ""
 log_info "Bootstrap tools preserved at: $BOOTSTRAP_DIR/bin"
 log_info "Host nix store mounted at: /nix/store"
