@@ -1,1 +1,25 @@
-../_context/repos/rkoster/instant-cf/devbox.json
+{
+  "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.16.0/.schema/devbox.schema.json",
+  "packages": [
+    "vendir@latest",
+    "go@latest",
+    "ytt@latest",
+    "bosh-cli@latest",
+    "docker@latest",
+    "git@latest"
+  ],
+  "shell": {
+    "scripts": {
+      "install-bob": [
+        "# Clone the bob repository using the GH_TOKEN environment variable",
+        "git clone https://x-access-token:${GH_TOKEN}@github.com/rkoster/bosh-oci-builder.git /tmp/bosh-oci-builder",
+        "",
+        "# Add bob flake from the cloned repo to devbox",
+        "devbox add path:/tmp/bosh-oci-builder#bob",
+        "",
+        "# Verify installation",
+        "bob --help"
+      ]
+    }
+  }
+}
