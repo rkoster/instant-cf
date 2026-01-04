@@ -37,4 +37,3 @@ go.work.sum
 # Test fixtures output
 test/fixtures/output/
 runner-container-hooks/
-manifests/generated/*.yml
