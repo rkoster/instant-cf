@@ -78,6 +78,7 @@ jobs:
 
       - name: Tag and push Database image
         run: |
+          devbox run -- bash -c '
           # Find the image that bob created and tag it with all metadata tags
           # Bob may create the image with a different name than expected
           IMAGE_ID=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep "instant-cf-database" | grep -v "none" | head -1)
@@ -97,6 +98,7 @@ jobs:
             echo "Pushing $tag"
             docker push "$tag"
           done
+          '
 
   build-runtime:
     runs-on: instant-cf-cached-privileged-kubernetes
@@ -157,6 +159,7 @@ jobs:
 
       - name: Tag and push Runtime image
         run: |
+          devbox run -- bash -c '
           # Find the image that bob created and tag it with all metadata tags
           # Bob may create the image with a different name than expected
           IMAGE_ID=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep "instant-cf-runtime" | grep -v "none" | head -1)
@@ -176,3 +179,4 @@ jobs:
             echo "Pushing $tag"
             docker push "$tag"
           done
+          '
