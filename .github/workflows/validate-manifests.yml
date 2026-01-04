@@ -18,8 +18,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Docker and Nix Store
-        run: .github/scripts/docker-setup.sh --skip-docker
+      - name: Setup Devbox and Nix Store
+        run: .github/scripts/devbox-setup.sh --skip-docker
 
       - name: Sync vendored dependencies
         run: devbox run vendir sync
