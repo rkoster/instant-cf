@@ -24,7 +24,7 @@ jobs:
     container:
       image: nixery.dev/shell/bash/findutils/coreutils/gnutar/gnugrep/gzip/busybox/cacert
       options: --privileged --init
-    timeout-minutes: 60
+    timeout-minutes: 120
     permissions:
       contents: read
       packages: write
@@ -71,7 +71,7 @@ jobs:
           devbox run -- make sync
 
       - name: Build Database BOSH OCI image with bob
-        timeout-minutes: 60
+        timeout-minutes: 120
         run: |
           # Build the database image using bob
           devbox run -- make build-database
@@ -103,7 +103,7 @@ jobs:
     container:
       image: nixery.dev/shell/bash/findutils/coreutils/gnutar/gnugrep/gzip/busybox/cacert
       options: --privileged --init
-    timeout-minutes: 60
+    timeout-minutes: 120
     permissions:
       contents: read
       packages: write
@@ -150,7 +150,7 @@ jobs:
           devbox run -- make sync
 
       - name: Build Runtime BOSH OCI image with bob
-        timeout-minutes: 60
+        timeout-minutes: 120
         run: |
           # Build the runtime image using bob
           devbox run -- make build-runtime
