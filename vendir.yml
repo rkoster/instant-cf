@@ -16,3 +16,15 @@ directories:
     - cf-deployment.yml
     - operations/use-postgres.yml
     - operations/bosh-lite.yml
+
+- path: .github/scripts
+  contents:
+  - path: .
+    git:
+      url: https://github.com/rkoster/deskrun
+      ref: main
+    includePaths:
+    - public/nix-setup.sh
+    - public/install-devbox.sh
+    - public/install-docker.sh
+    newRootPath: public
