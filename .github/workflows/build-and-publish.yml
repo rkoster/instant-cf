@@ -83,29 +83,29 @@ jobs:
         env:
           METADATA_TAGS: ${{ steps.meta.outputs.tags }}
         run: |
-          devbox run -- bash -c '
+          devbox run -- bash -c "
           # Find the image that bob created and tag it with all metadata tags
           # Bob may create the image with a different name than expected
-          IMAGE_ID=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep "instant-cf-database" | grep -v "none" | head -1)
+          IMAGE_ID=\$(docker images --format '{{.Repository}}:{{.Tag}}' | grep 'instant-cf-database' | grep -v 'none' | head -1)
           
-          if [ -z "$IMAGE_ID" ]; then
-            echo "Error: Could not find instant-cf-database image"
+          if [ -z \"\$IMAGE_ID\" ]; then
+            echo 'Error: Could not find instant-cf-database image'
             docker images
             exit 1
           fi
           
-          echo "Found image: $IMAGE_ID"
+          echo \"Found image: \$IMAGE_ID\"
           
           # Tag and push with all metadata tags
-          echo "$METADATA_TAGS" | while read tag; do
-            if [ -n "$tag" ]; then
-              echo "Tagging $IMAGE_ID as $tag"
-              docker tag "$IMAGE_ID" "$tag"
-              echo "Pushing $tag"
-              docker push "$tag"
+          echo \"\$METADATA_TAGS\" | while read tag; do
+            if [ -n \"\$tag\" ]; then
+              echo \"Tagging \$IMAGE_ID as \$tag\"
+              docker tag \"\$IMAGE_ID\" \"\$tag\"
+              echo \"Pushing \$tag\"
+              docker push \"\$tag\"
             fi
           done
-          '
+          "
 
   build-runtime:
     runs-on: instant-cf-cached-privileged-kubernetes
@@ -171,26 +171,26 @@ jobs:
         env:
           METADATA_TAGS: ${{ steps.meta.outputs.tags }}
         run: |
-          devbox run -- bash -c '
+          devbox run -- bash -c "
           # Find the image that bob created and tag it with all metadata tags
           # Bob may create the image with a different name than expected
-          IMAGE_ID=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep "instant-cf-runtime" | grep -v "none" | head -1)
+          IMAGE_ID=\$(docker images --format '{{.Repository}}:{{.Tag}}' | grep 'instant-cf-runtime' | grep -v 'none' | head -1)
           
-          if [ -z "$IMAGE_ID" ]; then
-            echo "Error: Could not find instant-cf-runtime image"
+          if [ -z \"\$IMAGE_ID\" ]; then
+            echo 'Error: Could not find instant-cf-runtime image'
             docker images
             exit 1
           fi
           
-          echo "Found image: $IMAGE_ID"
+          echo \"Found image: \$IMAGE_ID\"
           
           # Tag and push with all metadata tags
-          echo "$METADATA_TAGS" | while read tag; do
-            if [ -n "$tag" ]; then
-              echo "Tagging $IMAGE_ID as $tag"
-              docker tag "$IMAGE_ID" "$tag"
-              echo "Pushing $tag"
-              docker push "$tag"
+          echo \"\$METADATA_TAGS\" | while read tag; do
+            if [ -n \"\$tag\" ]; then
+              echo \"Tagging \$IMAGE_ID as \$tag\"
+              docker tag \"\$IMAGE_ID\" \"\$tag\"
+              echo \"Pushing \$tag\"
+              docker push \"\$tag\"
             fi
           done
-          '
+          "
