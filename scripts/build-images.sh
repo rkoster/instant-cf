@@ -135,7 +135,8 @@ build_image() {
             docker images "${image}" | grep -F "${TAG}"
             
             # Show image size
-            local size=$(docker images "${image}" --format "{{.Size}}")
+            local size
+            size=$(docker images "${image}" --format "{{.Size}}")
             log_info "Image size: ${size}"
         else
             log_warning "Image not found in local registry"

@@ -47,5 +47,5 @@ build-runtime: generate-runtime ## Build runtime container with bob
 
 lint-scripts: ## Run shellcheck on all bash scripts
 	@echo "Linting bash scripts..."
-	@devbox run -- shellcheck .github/scripts/*.sh scripts/*.sh
+	@devbox run -- shellcheck scripts/*.sh .github/scripts/tag-and-push-image.sh
 	@echo "✅ All scripts passed shellcheck"

@@ -115,7 +115,7 @@ esac
 #
 echo -e "${GREEN}=== Manifest Generation Complete ===${NC}"
 echo "Generated manifests:"
-ls -1 "${GENERATED_DIR}"/ | sed 's/^/  - /'
+find "${GENERATED_DIR}" -maxdepth 1 -type f -name "*.yml" -printf "%f\n" | sed 's/^/  - /'
 echo ""
 echo "Next steps:"
 echo "  1. Validate with: bosh interpolate manifests/generated/<manifest-name>.yml"
