@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help sync generate generate-database generate-runtime validate-templates build-database build-runtime
+.PHONY: help sync generate generate-database generate-runtime validate-templates build-database build-runtime lint-scripts
 
 # Default target - show help
 help: ## Show available commands
@@ -44,3 +44,8 @@ build-database: generate-database ## Build database container with bob
 build-runtime: generate-runtime ## Build runtime container with bob
 	@echo "Building Runtime container..."
 	@devbox run -- ./scripts/build-images.sh runtime
+
+lint-scripts: ## Run shellcheck on all bash scripts
+	@echo "Linting bash scripts..."
+	@devbox run -- shellcheck .github/scripts/*.sh scripts/*.sh
+	@echo "✅ All scripts passed shellcheck"

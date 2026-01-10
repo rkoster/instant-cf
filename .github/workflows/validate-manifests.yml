@@ -24,6 +24,9 @@ jobs:
       - name: Install Devbox
         run: .github/scripts/install-devbox.sh
 
+      - name: Lint bash scripts
+        run: devbox run -- make lint-scripts
+
       - name: Sync vendored dependencies
         run: devbox run vendir sync
 
