@@ -6,7 +6,8 @@
     "ytt@latest",
     "bosh-cli@latest",
     "docker@latest",
-    "git@latest"
+    "git@latest",
+    "shellcheck@latest"
   ],
   "shell": {
     "scripts": {

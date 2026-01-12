@@ -1,4 +1,4 @@
-name: Build and Publish Docker Image
+name: Build and Publish Docker Images
 
 on:
   push:
@@ -19,12 +19,12 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  build-and-push:
+  build-database:
     runs-on: instant-cf-cached-privileged-kubernetes
     container:
       image: nixery.dev/shell/bash/findutils/coreutils/gnutar/gnugrep/gzip/busybox/cacert
       options: --privileged --init
-    timeout-minutes: 60
+    timeout-minutes: 120
     permissions:
       contents: read
       packages: write
@@ -33,11 +33,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Docker and Nix Store
-        run: .github/scripts/docker-setup.sh
+      - name: Setup Nix
+        run: .github/scripts/nix-setup.sh
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Install Devbox
+        run: .github/scripts/install-devbox.sh
+
+      - name: Install Docker CLI
+        run: .github/scripts/install-docker.sh
 
       - name: Log in to Container Registry
         uses: docker/login-action@v3
@@ -62,7 +65,12 @@ jobs:
       - name: Install bob (BOSH OCI Builder)
         env:
           GH_TOKEN: ${{ secrets.GIT_BOB_PULL_SECRET }}
+          # Disable devenv integration in nix which causes issues on cached runners
+          DEVENV_ROOT: ""
         run: |
+          # Clean stale devbox state
+          rm -rf .devbox
+          
           # Use devbox script to install bob CLI
           devbox run install-bob
 
@@ -70,56 +78,85 @@ jobs:
         run: |
           devbox run -- make sync
 
-      - name: Build BOSH OCI image with bob
-        timeout-minutes: 30
+      - name: Build Database BOSH OCI image with bob
+        timeout-minutes: 120
         run: |
           # Build the database image using bob
-          devbox run -- bob build \
-            --manifest manifests/generated/instant-cf-phase1-database.yml \
-            --output instant-cf-database:latest
+          devbox run -- make build-database
 
-      - name: Tag and push image
-        run: |
-          # Find the image that bob created and tag it with all metadata tags
-          # Bob may create the image with a different name than expected
-          IMAGE_ID=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep "instant-cf-database" | grep -v "none" | head -1)
-          
-          if [ -z "$IMAGE_ID" ]; then
-            echo "Error: Could not find instant-cf-database image"
-            docker images
-            exit 1
-          fi
-          
-          echo "Found image: $IMAGE_ID"
-          
-          # Tag and push with all metadata tags
-          echo "${{ steps.meta.outputs.tags }}" | while read tag; do
-            echo "Tagging $IMAGE_ID as $tag"
-            docker tag "$IMAGE_ID" "$tag"
-            echo "Pushing $tag"
-            docker push "$tag"
-          done
-
-      - name: Tag and push image
-        run: |
-          # Find the image that bob created and tag it with all metadata tags
-          # Bob may create the image with a different name than expected
-          IMAGE_ID=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep "instant-cf-database" | grep -v "none" | head -1)
-          
-          if [ -z "$IMAGE_ID" ]; then
-            echo "Error: Could not find instant-cf-database image"
-            docker images
-            exit 1
-          fi
-          
-          echo "Found image: $IMAGE_ID"
-          
-          # Tag and push with all metadata tags
-          echo "${{ steps.meta.outputs.tags }}" | while read tag; do
-            echo "Tagging $IMAGE_ID as $tag"
-            docker tag "$IMAGE_ID" "$tag"
-            echo "Pushing $tag"
-            docker push "$tag"
-          done
+      - name: Tag and push Database image
         env:
-          NIX_REMOTE: daemon
+          METADATA_TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          ./.github/scripts/tag-and-push-image.sh "instant-cf-database" "$METADATA_TAGS"
+
+  build-runtime:
+    runs-on: instant-cf-cached-privileged-kubernetes
+    container:
+      image: nixery.dev/shell/bash/findutils/coreutils/gnutar/gnugrep/gzip/busybox/cacert
+      options: --privileged --init
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Nix
+        run: .github/scripts/nix-setup.sh
+
+      - name: Install Devbox
+        run: .github/scripts/install-devbox.sh
+
+      - name: Install Docker CLI
+        run: .github/scripts/install-docker.sh
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-runtime
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Install bob (BOSH OCI Builder)
+        env:
+          GH_TOKEN: ${{ secrets.GIT_BOB_PULL_SECRET }}
+          # Disable devenv integration in nix which causes issues on cached runners
+          DEVENV_ROOT: ""
+        run: |
+          # Clean stale devbox state
+          rm -rf .devbox
+          
+          # Use devbox script to install bob CLI
+          devbox run install-bob
+
+      - name: Sync vendored dependencies
+        run: |
+          devbox run -- make sync
+
+      - name: Build Runtime BOSH OCI image with bob
+        timeout-minutes: 120
+        run: |
+          # Build the runtime image using bob
+          devbox run -- make build-runtime
+
+      - name: Tag and push Runtime image
+        env:
+          METADATA_TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          ./.github/scripts/tag-and-push-image.sh "instant-cf-runtime" "$METADATA_TAGS"

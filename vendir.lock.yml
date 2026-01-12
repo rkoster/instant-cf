@@ -8,4 +8,10 @@ directories:
       - v53.8.0
     path: .
   path: manifests/cf-deployment
+- contents:
+  - git:
+      commitTitle: 'feat: add install-docker.sh for host Docker mode...'
+      sha: f587467f3ce1f61225985bce8ae32228775e65fb
+    path: .
+  path: .github/scripts
 kind: LockConfig

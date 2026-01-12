@@ -3,13 +3,13 @@
 # Build instant-cf container images using bob (BOSH OCI Builder)
 #
 # Usage:
-#   ./scripts/build-images.sh <phase> <component>
+#   ./scripts/build-images.sh <component>
 #
 # Examples:
-#   ./scripts/build-images.sh phase1 database
-#   ./scripts/build-images.sh phase1 control    # (planned for Milestone 5, not yet implemented)
-#   ./scripts/build-images.sh phase1 runtime    # (planned for Milestone 4, not yet implemented)
-#   ./scripts/build-images.sh phase1 all
+#   ./scripts/build-images.sh database
+#   ./scripts/build-images.sh runtime
+#   ./scripts/build-images.sh control    # (planned for future milestone, not yet implemented)
+#   ./scripts/build-images.sh all
 #
 
 set -euo pipefail
@@ -78,10 +78,9 @@ check_docker() {
 
 # Build a single container image
 build_image() {
-    local phase=$1
-    local component=$2
+    local component=$1
     
-    local manifest="${MANIFESTS_DIR}/instant-cf-${phase}-${component}.yml"
+    local manifest="${MANIFESTS_DIR}/instant-cf-${component}.yml"
     local image="${REGISTRY}/instant-cf-${component}:${TAG}"
     
     log_info "Building ${component} container..."
@@ -121,7 +120,7 @@ build_image() {
     
     # Expected bob command format based on ARCHITECTURE.md:
     # bob build \
-    #   --manifest manifests/generated/instant-cf-phase1-database.yml \
+    #   --manifest manifests/generated/instant-cf-database.yml \
     #   --output ghcr.io/rkoster/instant-cf-database:latest
     
     if bob build --manifest "${manifest}" --output "${image}"; then
@@ -136,7 +135,8 @@ build_image() {
             docker images "${image}" | grep -F "${TAG}"
             
             # Show image size
-            local size=$(docker images "${image}" --format "{{.Size}}")
+            local size
+            size=$(docker images "${image}" --format "{{.Size}}")
             log_info "Image size: ${size}"
         else
             log_warning "Image not found in local registry"
@@ -155,13 +155,13 @@ build_image() {
     fi
 }
 
-# Build all Phase 1 images
-build_phase1_all() {
-    log_info "Building all Phase 1 containers..."
+# Build all images
+build_all() {
+    log_info "Building all instant-cf containers..."
     local failed=0
     
-    # Build database first (other components depend on it)
-    if ! build_image "phase1" "database"; then
+    # Build database
+    if ! build_image "database"; then
         log_error "Database build failed"
         failed=$((failed + 1))
     fi
@@ -170,15 +170,20 @@ build_phase1_all() {
     log_info "================================"
     log_info ""
     
-    # Note: Control and runtime builds will be added in future milestones
-    # TODO: Add runtime before control (Milestone 4 before 5)
-    log_warning "Control and runtime containers not yet implemented"
-    log_info "Current milestone (Milestone 3) focuses on database container only"
+    # Build runtime
+    if ! build_image "runtime"; then
+        log_error "Runtime build failed"
+        failed=$((failed + 1))
+    fi
+    
     log_info ""
-    log_info "Future milestones will add:"
-    log_info "  - Milestone 4: runtime container (diego-cell)"
-    log_info "  - Milestone 5: control container (~35 colocated jobs)"
-    log_info "  - Milestone 6: Complete build infrastructure"
+    log_info "================================"
+    log_info ""
+    
+    # Note: Control build will be added in future milestone
+    log_warning "Control container not yet implemented"
+    log_info "Future milestone will add:"
+    log_info "  - Control container (~35 colocated jobs)"
     
     if [[ ${failed} -eq 0 ]]; then
         log_success "All available builds completed successfully"
@@ -191,26 +196,18 @@ build_phase1_all() {
 
 # Main script
 main() {
-    if [[ $# -lt 2 ]]; then
-        log_error "Usage: $0 <phase> <component>"
+    if [[ $# -lt 1 ]]; then
+        log_error "Usage: $0 <component>"
         echo ""
         echo "Examples:"
-        echo "  $0 phase1 database  - Build database container"
-        echo "  $0 phase1 runtime   - Build runtime container (Milestone 4, not yet implemented)"
-        echo "  $0 phase1 control   - Build control container (Milestone 5, not yet implemented)"
-        echo "  $0 phase1 all       - Build all Phase 1 containers"
+        echo "  $0 database  - Build database container"
+        echo "  $0 runtime   - Build runtime container"
+        echo "  $0 control   - Build control container (future milestone, not yet implemented)"
+        echo "  $0 all       - Build all containers"
         exit 1
     fi
     
-    local phase=$1
-    local component=$2
-    
-    # Validate phase
-    if [[ "${phase}" != "phase1" ]]; then
-        log_error "Invalid phase: ${phase}"
-        log_info "Currently only 'phase1' is supported"
-        exit 1
-    fi
+    local component=$1
     
     # Change to repository root (robust to symlinks)
     SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -220,29 +217,27 @@ main() {
     log_info "instant-cf Container Build"
     log_info "Registry: ${REGISTRY}"
     log_info "Tag: ${TAG}"
-    log_info "Phase: ${phase}"
     log_info "Component: ${component}"
     log_info ""
     
     # Build requested component(s)
     case "${component}" in
         database)
-            build_image "${phase}" "database"
-            ;;
-        control)
-            log_error "Control container not yet implemented (Milestone 5)"
-            exit 1
+            build_image "database"
             ;;
         runtime)
-            log_error "Runtime container not yet implemented (Milestone 4)"
+            build_image "runtime"
+            ;;
+        control)
+            log_error "Control container not yet implemented (future milestone)"
             exit 1
             ;;
         all)
-            build_phase1_all
+            build_all
             ;;
         *)
             log_error "Invalid component: ${component}"
-            log_info "Valid components: database, control, runtime, all"
+            log_info "Valid components: database, runtime, control, all"
             exit 1
             ;;
     esac

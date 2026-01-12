@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help sync generate generate-phase1-database validate-templates build-phase1-database build-phase1
+.PHONY: help sync generate generate-database generate-runtime validate-templates build-database build-runtime lint-scripts
 
 # Default target - show help
 help: ## Show available commands
@@ -25,16 +25,27 @@ generate: ## Generate all manifests using generate-manifests.sh
 	@echo "Generating manifests..."
 	@devbox run -- ./scripts/generate-manifests.sh
 
-generate-phase1-database: ## Generate Phase 1 database manifest only
-	@echo "Generating Phase 1 Database manifest..."
+generate-database: ## Generate database manifest only
+	@echo "Generating Database manifest..."
 	@mkdir -p manifests/generated
-	@devbox run -- ./scripts/generate-manifests.sh phase1-database
-	@echo "✅ Generated: manifests/generated/instant-cf-phase1-database.yml"
+	@devbox run -- ./scripts/generate-manifests.sh database
+	@echo "✅ Generated: manifests/generated/instant-cf-database.yml"
 
-build-phase1-database: generate-phase1-database ## Build Phase 1 database container with bob
-	@echo "Building Phase 1 Database container..."
-	@devbox run -- ./scripts/build-images.sh phase1 database
+generate-runtime: ## Generate runtime manifest only
+	@echo "Generating Runtime manifest..."
+	@mkdir -p manifests/generated
+	@devbox run -- ./scripts/generate-manifests.sh runtime
+	@echo "✅ Generated: manifests/generated/instant-cf-runtime.yml"
 
-build-phase1: generate ## Build all Phase 1 containers (database, control, runtime)
-	@echo "Building all Phase 1 containers..."
-	@devbox run -- ./scripts/build-images.sh phase1 all
+build-database: generate-database ## Build database container with bob
+	@echo "Building Database container..."
+	@devbox run -- ./scripts/build-images.sh database
+
+build-runtime: generate-runtime ## Build runtime container with bob
+	@echo "Building Runtime container..."
+	@devbox run -- ./scripts/build-images.sh runtime
+
+lint-scripts: ## Run shellcheck on all bash scripts
+	@echo "Linting bash scripts..."
+	@devbox run -- shellcheck scripts/*.sh .github/scripts/tag-and-push-image.sh
+	@echo "✅ All scripts passed shellcheck"

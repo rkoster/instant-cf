@@ -1,0 +1,49 @@
+#! runtime.yml
+#! Phase 1: Runtime-only manifest
+#! Filters cf-deployment to only include the diego-cell instance group with all 13 diego jobs
+#! and applies Phase 1 network configuration (static IP on instant-cf network)
+
+#@ load("@ytt:overlay", "overlay")
+#@ load("@ytt:data", "data")
+
+#! Remove all instance groups except diego-cell
+#! This is applied FIRST
+#@overlay/match by=overlay.all, expects="1+"
+---
+instance_groups:
+#@overlay/match by=lambda idx,left,right: left["name"] != "diego-cell", expects="0+"
+#@overlay/remove
+- name: placeholder
+
+#! Configure diego-cell instance group for Phase 1
+#! This is applied AFTER removing other groups
+#@overlay/match by=overlay.all, expects="1+"
+---
+instance_groups:
+#@overlay/match by=lambda idx,left,right: left["name"] == "diego-cell"
+- name: diego-cell
+  instances: 1
+  #! Replace networks array with instant-cf network configuration
+  #@overlay/replace
+  networks:
+  - name: #@ data.values.network.name
+    #! Set static IP for runtime container
+    static_ips:
+    - #@ data.values.network.ips.runtime
+  #! Keep all 13 diego-cell jobs:
+  #!   - bosh-dns-adapter
+  #!   - cflinuxfs4-rootfs-setup
+  #!   - garden
+  #!   - rep
+  #!   - cfdot
+  #!   - route_emitter
+  #!   - garden-cni
+  #!   - netmon
+  #!   - vxlan-policy-agent
+  #!   - silk-daemon
+  #!   - silk-cni
+  #!   - silk-datastore-syncer
+  #!   - loggr-udp-forwarder
+  #! Note: No job filtering - bosh-lite.yml already includes all needed diego-cell jobs
+  #! Note: Connection string updates (BBS, NATS, file_server) will be handled in Milestone 5
+  #!       when implementing the control plane template with proper service endpoints
