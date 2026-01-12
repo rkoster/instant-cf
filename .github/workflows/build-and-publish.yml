@@ -65,7 +65,12 @@ jobs:
       - name: Install bob (BOSH OCI Builder)
         env:
           GH_TOKEN: ${{ secrets.GIT_BOB_PULL_SECRET }}
+          # Disable devenv integration in nix which causes issues on cached runners
+          DEVENV_ROOT: ""
         run: |
+          # Clean stale devbox state
+          rm -rf .devbox
+          
           # Use devbox script to install bob CLI
           devbox run install-bob
 
@@ -131,7 +136,12 @@ jobs:
       - name: Install bob (BOSH OCI Builder)
         env:
           GH_TOKEN: ${{ secrets.GIT_BOB_PULL_SECRET }}
+          # Disable devenv integration in nix which causes issues on cached runners
+          DEVENV_ROOT: ""
         run: |
+          # Clean stale devbox state
+          rm -rf .devbox
+          
           # Use devbox script to install bob CLI
           devbox run install-bob
 
