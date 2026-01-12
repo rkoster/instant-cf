@@ -88,7 +88,7 @@ jobs:
         env:
           METADATA_TAGS: ${{ steps.meta.outputs.tags }}
         run: |
-          .github/scripts/tag-and-push-image.sh "instant-cf-database" "$METADATA_TAGS"
+          ./.github/scripts/tag-and-push-image.sh "instant-cf-database" "$METADATA_TAGS"
 
   build-runtime:
     runs-on: instant-cf-cached-privileged-kubernetes
@@ -159,4 +159,4 @@ jobs:
         env:
           METADATA_TAGS: ${{ steps.meta.outputs.tags }}
         run: |
-          .github/scripts/tag-and-push-image.sh "instant-cf-runtime" "$METADATA_TAGS"
+          ./.github/scripts/tag-and-push-image.sh "instant-cf-runtime" "$METADATA_TAGS"
